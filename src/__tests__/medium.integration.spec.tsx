@@ -104,10 +104,10 @@ describe('일정 뷰', () => {
     // ! 현재 시스템 시간 2024-10-01
     const { user } = setup(<App />);
 
-    await user.selectOptions(screen.getByLabelText('view'), 'week');
-
     // ! 일정 로딩 완료 후 테스트
     await screen.findByText('일정 로딩 완료!');
+
+    await user.selectOptions(screen.getByLabelText('view'), 'week');
 
     const eventList = within(screen.getByTestId('event-list'));
     expect(eventList.getByText('검색 결과가 없습니다.')).toBeInTheDocument();
