@@ -11,6 +11,7 @@ import {
 } from '../__mocks__/handlersUtils';
 import App from '../App';
 import { server } from '../setupTests';
+import { useEventFormStore } from '../store/eventFormStore';
 import { Event } from '../types';
 
 // ! Hard 여기 제공 안함
@@ -264,7 +265,7 @@ describe('일정 충돌', () => {
         description: '기존 팀 미팅',
         location: '회의실 B',
         category: '업무',
-        repeat: { type: 'none', interval: 0 },
+        repeat: { type: 'none', interval: 'same_date' },
         notificationTime: 10,
       },
     ]);
@@ -323,4 +324,70 @@ it('notificationTime을 10으로 하면 지정 시간 10분 전 알람 텍스트
   });
 
   expect(screen.getByText('10분 후 기존 회의 일정이 시작됩니다.')).toBeInTheDocument();
+});
+
+describe.only('일정 반복', () => {
+  beforeEach(() => {
+    // const { user } = setup(<App />);
+    // const titleInput = screen.getByLabelText('제목');
+    // user.clear(titleInput);
+  });
+
+  const newEvent = {
+    title: '새 회의',
+    date: '2024-10-15',
+    startTime: '14:00',
+    endTime: '15:00',
+    description: '프로젝트 진행 상황 논의',
+    location: '회의실 A',
+    category: '업무',
+    repeat: { type: 'none' },
+    notificationTime: 10,
+  };
+
+  it('이벤트 등록 시 반복 유형을 선택하지 않으면 반복 간격이 노출되지 않는다', async () => {
+    const { user } = setup(<App />);
+
+    await user.type(screen.getByLabelText('제목'), newEvent.title);
+    await user.type(screen.getByLabelText('날짜'), newEvent.date);
+    await user.type(screen.getByLabelText('시작 시간'), newEvent.startTime);
+    await user.type(screen.getByLabelText('종료 시간'), newEvent.endTime);
+    await user.type(screen.getByLabelText('설명'), newEvent.description);
+    await user.type(screen.getByLabelText('위치'), newEvent.location);
+    await user.selectOptions(screen.getByLabelText('카테고리'), newEvent.category);
+    await user.click(screen.getByLabelText('반복 설정'));
+    await user.selectOptions(screen.getByLabelText('알림 설정'), '10분 전');
+
+    expect(screen.queryByText('반복 간격')).not.toBeInTheDocument();
+  });
+
+  it('이벤트 등록 시 반복 유형을 "매일"로 선택하면 반복 간격이 노출되지 않는다', async () => {
+    const { user } = setup(<App />);
+
+    await user.type(screen.getByLabelText('제목'), newEvent.title);
+    await user.type(screen.getByLabelText('날짜'), newEvent.date);
+    await user.type(screen.getByLabelText('시작 시간'), newEvent.startTime);
+    await user.type(screen.getByLabelText('종료 시간'), newEvent.endTime);
+    await user.type(screen.getByLabelText('설명'), newEvent.description);
+    await user.type(screen.getByLabelText('위치'), newEvent.location);
+    await user.selectOptions(screen.getByLabelText('카테고리'), newEvent.category);
+    await user.click(screen.getByLabelText('반복 설정'));
+    await user.selectOptions(screen.getByLabelText('알림 설정'), '10분 전');
+
+    await act(async () => null);
+
+    const store = useEventFormStore.getState();
+
+    if (store.isRepeating) {
+      await user.selectOptions(screen.getByLabelText('반복 유형'), newEvent.repeat.type);
+
+      expect(screen.queryByText('반복 간격')).not.toBeInTheDocument();
+    }
+  });
+
+  it('이벤트 등록 시 반복 유형을 "매주"로 선택하면 반복 간격이 노출되지 않는다', () => {});
+
+  it('이벤트 등록 시 반복 유형을 "매월"로 선택하면 선택한 날짜에 맞는 반복 간격이 노출된다', () => {});
+
+  it('이벤트 등록 시 반복 유형을 "매년"로 선택하면 선택한 날짜에 맞는 반복 간격이 노출된다', () => {});
 });

@@ -9,13 +9,23 @@ import {
   Tooltip,
   VStack,
 } from '@chakra-ui/react';
+import { useMemo } from 'react';
 
-import { Event, RepeatType } from '../types';
+import { Event, RepeatIntervalType, RepeatType } from '../types';
 import { EventSubmitButton } from './EventSubmitButton';
 import { useEventFormStore } from '../store/eventFormStore';
 import { getTimeErrorMessage } from '../utils/timeValidation';
 
 const CATEGORIES = ['업무', '개인', '가족', '기타'];
+
+const getLastDayOfMonth = (year: number, month: number): number => {
+  return new Date(year, month, 0).getDate();
+};
+
+const getNthWeekdayOfMonth = (date: Date): number => {
+  const day = date.getDate();
+  return Math.ceil(day / 7);
+};
 
 const NOTIFICATION_OPTIONS = [
   { value: 1, label: '1분 전' },
@@ -60,6 +70,60 @@ export const EventForm = ({ toggleDialog, addOverlappingEvents }: EventFormProps
     repeatEndDate,
     setRepeatEndDate,
   } = useEventFormStore();
+
+  const repeatOptions = useMemo(() => {
+    if (!date || repeatType === 'daily' || repeatType === 'weekly') return [];
+
+    const selectedDate = new Date(date);
+    const day = selectedDate.getDate();
+    const month = selectedDate.getMonth() + 1;
+    const year = selectedDate.getFullYear();
+    const weekday = selectedDate.getDay();
+    const nthWeekday = getNthWeekdayOfMonth(selectedDate);
+    const lastDay = getLastDayOfMonth(year, month);
+    const monthLabel = `${month}월`;
+    const weekdayLabel = ['일', '월', '화', '수', '목', '금', '토'][weekday];
+
+    if (repeatType === 'monthly') {
+      return day === lastDay
+        ? [
+            { label: `${monthLabel}의 마지막 날`, value: 'same_month_last_day' },
+            { label: `${monthLabel} ${day}일`, value: `same_date` },
+            {
+              label: `${monthLabel} ${nthWeekday}번째 ${weekdayLabel}요일`,
+              value: `same_month_nth_weekday`,
+            },
+          ]
+        : [
+            { label: `${monthLabel} ${day}일`, value: `same_date` },
+            {
+              label: `${monthLabel} ${nthWeekday}번째 ${weekdayLabel}요일`,
+              value: `same_month_nth_weekday`,
+            },
+          ];
+    }
+
+    if (repeatType === 'yearly') {
+      return day === lastDay
+        ? [
+            { label: `${monthLabel}의 마지막 날`, value: 'same_month_last_day' },
+            { label: `${monthLabel} ${day}일`, value: `same_date` },
+            {
+              label: `${monthLabel} ${nthWeekday}번째 ${weekdayLabel}요일`,
+              value: `same_month_nth_weekday`,
+            },
+          ]
+        : [
+            { label: `${monthLabel} ${day}일`, value: `same_date` },
+            {
+              label: `${monthLabel} ${nthWeekday}번째 ${weekdayLabel}요일`,
+              value: `same_month_nth_weekday`,
+            },
+          ];
+    }
+
+    return [];
+  }, [date, repeatType]);
 
   return (
     <VStack w="400px" spacing={5} align="stretch">
@@ -160,15 +224,21 @@ export const EventForm = ({ toggleDialog, addOverlappingEvents }: EventFormProps
             </Select>
           </FormControl>
           <HStack width="100%">
-            <FormControl>
-              <FormLabel>반복 간격</FormLabel>
-              <Input
-                type="number"
-                value={repeatInterval}
-                onChange={(e) => setRepeatInterval(Number(e.target.value))}
-                min={1}
-              />
-            </FormControl>
+            {repeatOptions.length > 0 && (
+              <FormControl>
+                <FormLabel>반복 간격</FormLabel>
+                <Select
+                  value={repeatInterval}
+                  onChange={(e) => setRepeatInterval(e.target.value as RepeatIntervalType)}
+                >
+                  {repeatOptions.map((option, index) => (
+                    <option key={index} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
             <FormControl>
               <FormLabel>반복 종료일</FormLabel>
               <Input
@@ -185,3 +255,11 @@ export const EventForm = ({ toggleDialog, addOverlappingEvents }: EventFormProps
     </VStack>
   );
 };
+
+// 반복 유형을 선택하면 그에 따르는 반복 간격의 옵션이 변경된다
+// 매일, 매주는 반복 간격이 없다
+// 매월은 28일, 4번쨰 금요일, 월의 마지막 날 3개
+// 매년은 2월 28일, 2월 4번째 금요일, 2월 마지막날 3개
+// 만약 월의 마지막날이 아니라면 ?
+// 매월은 20일, 3번쨰 목요일
+// 2월 20일, 2월 3번째 목요일

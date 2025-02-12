@@ -1,8 +1,10 @@
 export type RepeatType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
+export type RepeatIntervalType = 'same_month_last_day' | 'same_date' | 'same_month_nth_weekday';
+
 export interface RepeatInfo {
   type: RepeatType;
-  interval: number;
+  interval: RepeatIntervalType;
   endDate?: string;
 }
 

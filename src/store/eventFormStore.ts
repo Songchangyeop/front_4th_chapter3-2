@@ -1,7 +1,7 @@
 import { ChangeEvent } from 'react';
 import { create } from 'zustand';
 
-import { Event, RepeatType } from '../types';
+import { Event, RepeatIntervalType, RepeatType } from '../types';
 import { getTimeErrorMessage } from '../utils/timeValidation';
 
 interface EventFormState {
@@ -14,7 +14,7 @@ interface EventFormState {
   category: string;
   isRepeating: boolean;
   repeatType: RepeatType;
-  repeatInterval: number;
+  repeatInterval?: RepeatIntervalType;
   repeatEndDate: string;
   notificationTime: number;
   editingEvent: Event | null;
@@ -32,7 +32,7 @@ interface EventFormActions {
   setCategory: (category: string) => void;
   setIsRepeating: (isRepeating: boolean) => void;
   setRepeatType: (type: RepeatType) => void;
-  setRepeatInterval: (interval: number) => void;
+  setRepeatInterval: (interval: RepeatIntervalType) => void;
   setRepeatEndDate: (date: string) => void;
   setNotificationTime: (time: number) => void;
   setEditingEvent: (event: Event | null) => void;
@@ -52,7 +52,7 @@ const initialState: EventFormState = {
   category: '',
   isRepeating: false,
   repeatType: 'none',
-  repeatInterval: 1,
+  repeatInterval: undefined,
   repeatEndDate: '',
   notificationTime: 10,
   editingEvent: null,
